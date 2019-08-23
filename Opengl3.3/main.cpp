@@ -1,5 +1,6 @@
 ﻿#include <glad/glad.h>
-//GLFW是一个专门针对OpenGL的C语言库，它提供了一些渲染物体所需的最低限度的接口。它允许用户创建OpenGL上下文，定义窗口参数以及处理用户输入
+//GLFW是一个专门针对OpenGL的C语言库，它提供了一些渲染物体所需的最低限度的接口。
+//它允许用户创建OpenGL上下文，定义窗口参数以及处理用户输入
 #include <GLFW/glfw3.h>
 #include "glm.hpp"
 #include "gtc/matrix_transform.hpp"
@@ -23,8 +24,10 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 //鼠标点击选取3D坐标
 void Get3Dpos(int x, int y, glm::vec3 *pp, glm::mat4 modelandview, glm::mat4 poj);
-//根据点计算平面
+//根据三个不共线点计算平面
 glm::vec4 CalculatePlane(std::vector<glm::vec3>points);
+//根据四个不共面点计算球面
+glm::vec4 CalculateGlobe(std::vector<glm::vec3>points);
 void processInput(GLFWwindow *window);
 
 void printMat4(glm::mat4 mat) {
@@ -49,6 +52,8 @@ bool flagbutton2 = true;
 bool flagbutton3 = true;
 //Functionparameters uniform变量的初始化
 bool flagbutton4 = true;
+//切割模式的选择
+int flagbutton5 = 1;
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
@@ -70,6 +75,8 @@ std::vector<glm::vec3> translates;
 std::vector<Model> MODELS;
 //存储选择的点
 std::vector<glm::vec3> points;
+//光源位置
+glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 int main()
 {
 	translates.push_back(glm::vec3(0.0f, 0.0f, 0.0f));
@@ -111,7 +118,9 @@ int main()
 
 
 	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_ALWAYS);
+	//让颜色直接用作材质
+	//glEnable(GL_COLOR_MATERIAL);
+	glDepthFunc(GL_LESS);
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -153,8 +162,6 @@ int main()
 
 		//输入
 		processInput(window);
-		//清空models
-		//models.clear();
 
 		glClearColor(0.0f, 0.3f, 0.05f, 1.0f);
 		//清空深度缓冲
@@ -182,8 +189,13 @@ int main()
 		ourShader.setMat4("inversepoj", inversepoj);
 		ourShader.setMat4("inverseview", inverseview);
 		ourShader.setFloat("time", glfwGetTime());
-
-		
+		glm::vec3 lightColor;
+		lightColor.x = sin(glfwGetTime()*2.0f);
+		lightColor.y = sin(glfwGetTime()*0.7f);
+		lightColor.z = sin(glfwGetTime()*1.3f);
+		ourShader.setVec3("lightColor", lightColor);
+		ourShader.setVec3("lightPos", lightPos);
+		ourShader.setVec3("viewPos", camera.Position);
 
 		
 		for (unsigned int i = 0; i < MODELS.size(); i++) {
@@ -245,18 +257,48 @@ int main()
 			}
 
 		}
+		if ((glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)) {
+			if (flagbutton5 == 1) {
+				flagbutton5 = 2;
+				std::cout << "Switch to sphere cutting now!" << std::endl;
+			}
+			else {
+				flagbutton5 = 1;
+				std::cout << "Switch to plane cutting now!" << std::endl;
+			}
+		}
 		//设置全局变量Functionparameters
 		if (flagbutton4 == true) {
 			ourShader.setFloat("Functionparameters", 0, 0, 0,0);
 		}
-		if (points.size() == 3) {
+		if (points.size() == 3&&flagbutton5==1) {
 			flagbutton3 = false;
 			flagbutton4 = false;
 			glm::vec4 mes = CalculatePlane(points);
 			ourShader.setFloat("Functionparameters", mes.x,mes.y,mes.z,mes.w);
-			ourShader.setFloat("point1",points[0].x, points[0].y, points[0].z, 0);
+			
+			/*ourShader.setFloat("point1", points[0].x, points[0].y, points[0].z, 0);
 			ourShader.setFloat("point2", points[1].x, points[1].y, points[1].z, 0);
-			ourShader.setFloat("point3", points[2].x, points[2].y, points[2].z, 0);
+			ourShader.setFloat("point3", points[2].x, points[2].y, points[2].z, 0);*/
+		}
+		//使用黑色标志出已经选择的点
+		if (!points.empty()) {
+			int i = 0;
+			while (i < points.size()) {
+				std::string s;
+				if (i == 0) {
+					s = "point1";
+				}
+				else if (i == 1) {
+					s = "point2";
+				}
+				else if (i == 2) {
+					s = "point3";
+				}
+				
+				ourShader.setFloat(s, points[i].x, points[i].y, points[i].z, 0);
+				i++;
+			}
 		}
 		//ourShader.setMat4("model", outModel);
 		/*if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
@@ -304,9 +346,68 @@ glm::vec4 CalculatePlane(std::vector<glm::vec3> points)
 	result.y = b;
 	result.z = c;
 	result.w = d;
+	//输出所计算的函数
+	//std::cout << result.x << " " << result.y << " " << result.z << " " << std::endl;
 	return result;
 }
+glm::vec4 CalculateGlobe(std::vector<glm::vec3> points) {
+	double resultR;
+	glm::vec4 result;
+	double x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4;
+	double a, b, c, A, B, C, a1, b1, c1, A1, B1, C1, a2, b2, c2, A2, B2, C2;
+	double P, Q, R;
+	double x, y, z;
+	x1 = points[0].x;
+	y1 = points[0].y;
+	z1 = points[0].z;
 
+	x2 = points[1].x;
+	y2 = points[1].y;
+	z2 = points[1].z;
+
+	x3 = points[2].x;
+	y3 = points[2].y;
+	z3 = points[2].z;
+
+	x4 = points[3].x;
+	y4 = points[3].y;
+	z4 = points[3].z;
+
+	a = (x1 - x2);
+	b = (y1 - y2);
+	c = (z1 - z2);
+	A = (x1 * x1 - x2 * x2);
+	B = (y1 * y1 - y2 * y2);
+	C = (z1 * z1 - z2 * z2);
+	a1 = (x3 - x4);
+	b1 = (y3 - y4);
+	c1 = (z3 - z4);
+	A1 = (x3 * x3 - x4 * x4);
+	B1 = (y3 * y3 - y4 * y4);
+	C1 = (z3 * z3 - z4 * z4);
+	a2 = (x2 - x3);
+	b2 = (y2 - y3);
+	c2 = (z2 - z3);
+	A2 = (x2 * x2 - x3 * x3);
+	B2 = (y2 * y2 - y3 * y3);
+	C2 = (z2 * z2 - z3 * z3);
+	P = (A + B + C) / 2;
+	Q = (A1 + B1 + C1) / 2;
+	R = (A2 + B2 + C2) / 2; //D是系数行列式，运用克拉默法则
+	double D = a * b1 * c2 + a2 * b * c1 + c * a1 * b2 - (a2 * b1 * c + a1 * b * c2 + a * b2 * c1);
+	double Dx = P * b1 * c2 + b * c1 * R + c * Q * b2 - (c * b1 * R + P * c1 * b2 + Q * b * c2);
+	double Dy = a * Q * c2 + P * c1 * a2 + c * a1 * R - (c * Q * a2 + a * c1 * R + c2 * P * a1);
+	double Dz = a * b1 * R + b * Q * a2 + P * a1 * b2 - (a2 * b1 * P + a * Q * b2 + R * b * a1);
+	x = Dx / D;
+	y = Dy / D;
+	z = Dz / D;
+	resultR = sqrt((x1-x)*(x1-x)+(y1-y)*(y1-y)+(z1-z)*(z1-z));
+	result.x = x;
+	result.y = y;
+	result.z = z;
+	result.w = resultR;
+	return result;
+}
 void processInput(GLFWwindow *window)
 {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -339,10 +440,10 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 		if (flagbutton == true) {
 			glfwSetCursorPosCallback(window, mouse_callback);
 			flagbutton = false;
-			std::cout << "first";
+			std::cout << "FirstMouseMode" << std::endl;
 		}
 		else {
-			std::cout << "second";
+			std::cout << "SecondMouseMode" << std::endl;
 			glfwSetCursorPosCallback(window, mouse_callback1);
 			flagbutton = true;
 		}
@@ -368,9 +469,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 	}
 	return;
 }
-//void clearmodels(std::vector<glm::mat4> models) {
-//
-//}
+
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
 	if (firstMouse)

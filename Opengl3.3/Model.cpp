@@ -117,6 +117,8 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
 		vector.x = mesh->mNormals[i].x;
 		vector.y = mesh->mNormals[i].y;
 		vector.z = mesh->mNormals[i].z;
+		//打印法向量
+		//std::cout << vector.x << vector.y << vector.z << std::endl;
 		vertex.Normal = vector;
 		//��������
 		if (mesh->mTextureCoords[0]) // �����Ƿ����������ꣿ
