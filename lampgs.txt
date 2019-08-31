@@ -1,0 +1,172 @@
+#version 330 core
+layout (triangles) in;
+layout (triangle_strip, max_vertices = 3) out;
+
+in VS_OUT {
+    vec2 texCoords;
+	vec4 color;
+	vec3 Normal;
+    vec3 FragPos;
+} gs_in[];
+
+
+out vec4 fColor;
+out vec2 TexCoords; 
+out vec3 gNormal;
+out vec3 gFragPos;
+uniform float time;
+uniform float cutmode;
+uniform mat4 inversemodel;
+uniform mat4 inverseview;
+uniform mat4 inversepoj; 
+uniform vec4 Functionparameters;
+uniform vec4 point1;
+uniform vec4 point2;
+uniform vec4 point3;
+
+vec4 explode(vec4 position, vec3 normal)
+{
+    
+	vec3 direction = normal;
+    return position + vec4(direction, 0.0);
+}
+
+vec3 GetNormal()
+{
+    vec3 a = vec3(gl_in[0].gl_Position) - vec3(gl_in[1].gl_Position);
+    vec3 b = vec3(gl_in[2].gl_Position) - vec3(gl_in[1].gl_Position);
+    return normalize(cross(a, b));
+}
+
+void main() {
+  
+    vec3 normal = GetNormal();
+	vec4 nowvec1 = vec4(gl_in[0].gl_Position.x,gl_in[0].gl_Position.y,gl_in[0].gl_Position.z,gl_in[0].gl_Position.w);
+	vec4 nowvec2 = vec4(gl_in[1].gl_Position.x,gl_in[1].gl_Position.y,gl_in[1].gl_Position.z,gl_in[1].gl_Position.w);
+	vec4 nowvec3 = vec4(gl_in[2].gl_Position.x,gl_in[2].gl_Position.y,gl_in[2].gl_Position.z,gl_in[2].gl_Position.w);
+	vec4 truemodel1 = inversemodel*inverseview*inversepoj*nowvec1;
+	vec4 truemodel2 = inversemodel*inverseview*inversepoj*nowvec2;
+	vec4 truemodel3 = inversemodel*inverseview*inversepoj*nowvec3;
+	if((((truemodel1.x-point1.x)*(truemodel1.x-point1.x)+(truemodel1.y-point1.y)*(truemodel1.y-point1.y)+(truemodel1.z-point1.z)*(truemodel1.z-point1.z))<50)||(((truemodel1.x-point2.x)*(truemodel1.x-point2.x)+(truemodel1.y-point2.y)*(truemodel1.y-point2.y)+(truemodel1.z-point2.z)*(truemodel1.z-point2.z))<50)||(((truemodel1.x-point3.x)*(truemodel1.x-point3.x)+(truemodel1.y-point3.y)*(truemodel1.y-point3.y)+(truemodel1.z-point3.z)*(truemodel1.z-point3.z))<50)){
+	fColor = vec4(0.0f,0.0f,0.0f,1.0f);
+	}
+	if(Functionparameters.x==0&&Functionparameters.y==0&&Functionparameters.z==0&&Functionparameters.w==0){
+	
+	gl_Position = gl_in[0].gl_Position;
+    TexCoords = gs_in[0].texCoords;
+	fColor = gs_in[0].color;
+	gNormal = gs_in[0].Normal;
+	gFragPos = gs_in[0].FragPos;
+	
+    EmitVertex();
+    gl_Position =gl_in[1].gl_Position;
+    TexCoords = gs_in[1].texCoords;
+	fColor = gs_in[1].color;
+	gNormal = gs_in[1].Normal;
+	gFragPos = gs_in[1].FragPos;
+	
+    EmitVertex();
+    gl_Position = gl_in[2].gl_Position;
+    TexCoords = gs_in[2].texCoords;
+	fColor = gs_in[2].color;
+	gNormal = gs_in[2].Normal;
+	gFragPos = gs_in[2].FragPos;
+	
+    EmitVertex();
+    EndPrimitive();
+	}else{
+        if(cutmode==1){
+
+        
+	if((truemodel1.x*Functionparameters.x+truemodel1.y*Functionparameters.y+truemodel1.z*Functionparameters.z+Functionparameters.w)>0&&(truemodel2.x*Functionparameters.x+truemodel2.y*Functionparameters.y+truemodel2.z*Functionparameters.z+Functionparameters.w)>0&&(truemodel3.x*Functionparameters.x+truemodel3.y*Functionparameters.y+truemodel3.z*Functionparameters.z+Functionparameters.w)>0){
+	float sum = sqrt(pow(Functionparameters.x,2)+pow(Functionparameters.y,2)+pow(Functionparameters.z,2));
+	//float sum = 1000;
+	gl_Position = explode(gl_in[0].gl_Position, vec3(2*Functionparameters.x/sum,2*Functionparameters.y/sum,2*Functionparameters.z/sum));
+    TexCoords = gs_in[0].texCoords;
+	fColor = gs_in[0].color;
+	gNormal = gs_in[0].Normal;
+	gFragPos = gs_in[0].FragPos;
+    EmitVertex();
+    gl_Position = explode(gl_in[1].gl_Position, vec3(2*Functionparameters.x/sum,2*Functionparameters.y/sum,2*Functionparameters.z/sum));
+    TexCoords = gs_in[1].texCoords;
+	fColor = gs_in[1].color;
+	gNormal = gs_in[1].Normal;
+	gFragPos = gs_in[1].FragPos;
+    EmitVertex();
+    gl_Position = explode(gl_in[2].gl_Position, vec3(2*Functionparameters.x/sum,2*Functionparameters.y/sum,2*Functionparameters.z/sum));
+    TexCoords = gs_in[2].texCoords;
+	fColor = gs_in[2].color;
+	gNormal = gs_in[2].Normal;
+	gFragPos = gs_in[2].FragPos;
+    EmitVertex();
+	
+    EndPrimitive();
+	}else{
+	gl_Position = gl_in[0].gl_Position;
+    TexCoords = gs_in[0].texCoords;
+	fColor = gs_in[0].color;
+	gNormal = gs_in[0].Normal;
+	gFragPos = gs_in[0].FragPos;
+    EmitVertex();
+    gl_Position =gl_in[1].gl_Position;
+    TexCoords = gs_in[1].texCoords;
+	fColor = gs_in[1].color;
+	gNormal = gs_in[1].Normal;
+	gFragPos = gs_in[1].FragPos;
+    EmitVertex();
+    gl_Position = gl_in[2].gl_Position;
+    TexCoords = gs_in[2].texCoords;
+	fColor = gs_in[2].color;
+	gNormal = gs_in[2].Normal;
+	gFragPos = gs_in[2].FragPos;
+    EmitVertex();
+    EndPrimitive();
+	}
+        }else if(cutmode==2){
+            if((((truemodel1.x-Functionparameters.x)*(truemodel1.x-Functionparameters.x)+(truemodel1.y-Functionparameters.y)*(truemodel1.y-Functionparameters.y)+(truemodel1.z-Functionparameters.z)*(truemodel1.z-Functionparameters.z))<(Functionparameters.w*Functionparameters.w))&&(((truemodel2.x-Functionparameters.x)*(truemodel2.x-Functionparameters.x)+(truemodel2.y-Functionparameters.y)*(truemodel2.y-Functionparameters.y)+(truemodel2.z-Functionparameters.z)*(truemodel2.z-Functionparameters.z))<(Functionparameters.w*Functionparameters.w))&&(((truemodel3.x-Functionparameters.x)*(truemodel3.x-Functionparameters.x)+(truemodel3.y-Functionparameters.y)*(truemodel3.y-Functionparameters.y)+(truemodel3.z-Functionparameters.z)*(truemodel3.z-Functionparameters.z))<(Functionparameters.w*Functionparameters.w))){
+                gl_Position = explode(gl_in[0].gl_Position, vec3(0.3,0.3,0.3));
+    TexCoords = gs_in[0].texCoords;
+	fColor = gs_in[0].color;
+	gNormal = gs_in[0].Normal;
+	gFragPos = gs_in[0].FragPos;
+    EmitVertex();
+    gl_Position = explode(gl_in[1].gl_Position, vec3(0.3,0.3,0.3));
+    TexCoords = gs_in[1].texCoords;
+	fColor = gs_in[1].color;
+	gNormal = gs_in[1].Normal;
+	gFragPos = gs_in[1].FragPos;
+    EmitVertex();
+    gl_Position = explode(gl_in[2].gl_Position, vec3(0.3,0.3,0.3));
+    TexCoords = gs_in[2].texCoords;
+	fColor = gs_in[2].color;
+	gNormal = gs_in[2].Normal;
+	gFragPos = gs_in[2].FragPos;
+    EmitVertex();
+	
+    EndPrimitive();
+            }else{
+                gl_Position = gl_in[0].gl_Position;
+    TexCoords = gs_in[0].texCoords;
+	fColor = gs_in[0].color;
+	gNormal = gs_in[0].Normal;
+	gFragPos = gs_in[0].FragPos;
+    EmitVertex();
+    gl_Position =gl_in[1].gl_Position;
+    TexCoords = gs_in[1].texCoords;
+	fColor = gs_in[1].color;
+	gNormal = gs_in[1].Normal;
+	gFragPos = gs_in[1].FragPos;
+    EmitVertex();
+    gl_Position = gl_in[2].gl_Position;
+    TexCoords = gs_in[2].texCoords;
+	fColor = gs_in[2].color;
+	gNormal = gs_in[2].Normal;
+	gFragPos = gs_in[2].FragPos;
+    EmitVertex();
+    EndPrimitive();
+            }
+        }
+	}
+	
+    
+}
