@@ -2,6 +2,8 @@
 
 using namespace std;
 
+
+
 Model::Model(string path)
 {
 	//初始化矩阵
@@ -74,6 +76,20 @@ void Model::setrgb(float r, float g, float b, float t)
 	this->rgb.z = b;
 	this->rgb.w = t;
 }
+Xyz Model::volume()
+{
+	Xyz value;
+	value.maxx = this->maxx;
+	value.minx = this->minx;
+
+	value.maxy = this->maxy;
+	value.miny = this->miny;
+
+	value.maxz = this->maxz;
+	value.minz = this->minz;
+	
+	return value;
+}
 //废弃的方法
 void Model::Draw(Shader &shader, std::vector<glm::mat4> models) {
 	for (unsigned int i = 0; i < meshes.size(); i++) {
@@ -102,17 +118,45 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
 	vector<Vertex> vertices;
 	vector<unsigned int> indices;
 	vector<Texture> textures;
-
+	this->maxx = 0;
+	this->minx = 10000;
+	this->maxy = 0;
+	this->miny = 10000;
+	this->maxz = 0;
+	this->minz = 10000;
 	for (unsigned int i = 0; i < mesh->mNumVertices; i++)
 	{
 		Vertex vertex;
 		// ������λ�á����ߺ���������
 		//����
+		
+
 		glm::vec3 vector;
 		vector.x = mesh->mVertices[i].x;
 		vector.y = mesh->mVertices[i].y;
 		vector.z = mesh->mVertices[i].z;
 		vertex.Position = vector;
+		if (vector.x > this->maxx) {
+			this->maxx = vector.x;
+		}
+		if (vector.x < this->minx) {
+			this->minx = vector.x;
+		}
+
+		if (vector.y > this->maxy) {
+			this->maxy = vector.y;
+		}
+		if (vector.y < this->miny) {
+			this->miny = vector.y;
+		}
+
+		if (vector.z > this->maxz) {
+			this->maxz = vector.z;
+		}
+		if (vector.z < this->minz) {
+			this->minz = vector.z;
+		}
+		
 		//����
 		vector.x = mesh->mNormals[i].x;
 		vector.y = mesh->mNormals[i].y;

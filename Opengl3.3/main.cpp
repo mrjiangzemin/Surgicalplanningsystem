@@ -28,7 +28,12 @@ void Get3Dpos(int x, int y, glm::vec3 *pp, glm::mat4 modelandview, glm::mat4 poj
 glm::vec4 CalculatePlane(std::vector<glm::vec3>points);
 //根据四个不共面点计算球面
 glm::vec4 CalculateGlobe(std::vector<glm::vec3>points);
+
+
 void processInput(GLFWwindow *window);
+//计算切割后的剩余面积
+
+void CalculateVolume(Xyz value, glm::vec4 Functionparameters);
 
 void printMat4(glm::mat4 mat) {
 	
@@ -54,6 +59,8 @@ bool flagbutton3 = true;
 bool flagbutton4 = true;
 //切割模式的选择
 int flagbutton5 = 1;
+
+bool flagbutton6 = true;
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
@@ -76,7 +83,7 @@ std::vector<Model> MODELS;
 //存储选择的点
 std::vector<glm::vec3> points;
 //光源位置
-glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+glm::vec3 lightPos(0.0f, 0.0f, 0.0f);
 int main()
 {
 	translates.push_back(glm::vec3(0.0f, 0.0f, 0.0f));
@@ -120,12 +127,13 @@ int main()
 	glEnable(GL_DEPTH_TEST);
 	//让颜色直接用作材质
 	//glEnable(GL_COLOR_MATERIAL);
-	glDepthFunc(GL_LESS);
+	glDepthFunc(GL_ALWAYS);
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	Shader ourShader("D:\\OpenGlProject\\lampvs.txt", "D:\\OpenGlProject\\lampfs.txt","D:\\OpenGlProject\\lampgs.txt");
-	
+	//Shader normalShader("D:\\OpenGlProject\\normalvs.txt", "D:\\OpenGlProject\\normalfs.txt", "D:\\OpenGlProject\\normalgs.txt");
+	//Shader LampShader("D:\\OpenGlProject\\lvs.txt", "D:\\OpenGlProject\\lfs.txt");
 	/*Shader myShader("lampvs.txt", "lampfs.txt");
 	Shader allShader("vs.txt", "fs.txt");*/
 
@@ -137,12 +145,13 @@ int main()
 	Model *model3 = new	Model("F:\\手术规划系统\\liverstllib\\0300292\\腔静脉.stl");
 	Model *model4 = new	Model("F:\\手术规划系统\\liverstllib\\0300292\\肿瘤.stl");
 	Model *model5 = new	Model("F:\\手术规划系统\\liverstllib\\0300292\\动脉.stl");
+	
 	//设定颜色RGB值
-	(*model1).setrgb(1.0f, 1.0f, 1.0f, 0.1f);
-	(*model2).setrgb(1.0f, 0.0f, 0.0f, 1.0f);
-	(*model3).setrgb(1.0f, 0.0f, 0.0f, 1.0f);
+	(*model1).setrgb(1.0f, 1.0f, 1.0f, 0.5f);
+	(*model2).setrgb(0.0f, 0.0f, 1.0f, 1.0f);
+	(*model3).setrgb(1.0f, 1.0f, 0.0f, 1.0f);
 	(*model4).setrgb(0.0f, 1.0f, 0.0f, 1.0f);
-	(*model5).setrgb(0.0f, 0.0f, 1.0f, 1.0f);
+	(*model5).setrgb(1.0f, 0.0f, 0.0f, 1.0f);
 
 	MODELS.push_back(*model1);
 	MODELS.push_back(*model2);
@@ -189,10 +198,10 @@ int main()
 		ourShader.setMat4("inversepoj", inversepoj);
 		ourShader.setMat4("inverseview", inverseview);
 		ourShader.setFloat("time", glfwGetTime());
-		glm::vec3 lightColor;
-		lightColor.x = sin(glfwGetTime()*2.0f);
+		glm::vec3 lightColor = glm::vec3(1.0f,1.0f,1.0f);
+		/*lightColor.x = sin(glfwGetTime()*2.0f);
 		lightColor.y = sin(glfwGetTime()*0.7f);
-		lightColor.z = sin(glfwGetTime()*1.3f);
+		lightColor.z = sin(glfwGetTime()*1.3f);*/
 		ourShader.setVec3("lightColor", lightColor);
 		ourShader.setVec3("lightPos", lightPos);
 		ourShader.setVec3("viewPos", camera.Position);
@@ -269,14 +278,33 @@ int main()
 		}
 		//设置全局变量Functionparameters
 		if (flagbutton4 == true) {
+			ourShader.setFloat("cutmode", 0.0f);
 			ourShader.setFloat("Functionparameters", 0, 0, 0,0);
 		}
+		//平面切割
 		if (points.size() == 3&&flagbutton5==1) {
 			flagbutton3 = false;
 			flagbutton4 = false;
 			glm::vec4 mes = CalculatePlane(points);
+			ourShader.setFloat("cutmode", 1.0f);
 			ourShader.setFloat("Functionparameters", mes.x,mes.y,mes.z,mes.w);
+			if (flagbutton6) {
+				CalculateVolume(model1->volume(), mes);
+				flagbutton6 = false;
+			}
 			
+			/*ourShader.setFloat("point1", points[0].x, points[0].y, points[0].z, 0);
+			ourShader.setFloat("point2", points[1].x, points[1].y, points[1].z, 0);
+			ourShader.setFloat("point3", points[2].x, points[2].y, points[2].z, 0);*/
+		}
+		//球面切割
+		if (points.size() == 4 && flagbutton5 == 2) {
+			flagbutton3 = false;
+			flagbutton4 = false;
+			glm::vec4 mes = CalculateGlobe(points);
+			ourShader.setFloat("cutmode", 2.0f);
+			ourShader.setFloat("Functionparameters", mes.x, mes.y, mes.z, mes.w);
+
 			/*ourShader.setFloat("point1", points[0].x, points[0].y, points[0].z, 0);
 			ourShader.setFloat("point2", points[1].x, points[1].y, points[1].z, 0);
 			ourShader.setFloat("point3", points[2].x, points[2].y, points[2].z, 0);*/
@@ -309,7 +337,15 @@ int main()
 			MODELS[i].Draw(ourShader);
 
 		}
-		
+
+		//normalShader.use();
+		//normalShader.setMat4("projection", projection);
+		//normalShader.setMat4("view", view);
+		//for (int i = 0; i < MODELS.size(); i++) {
+		//	//std::cout << MODELS.size();
+		//	MODELS[i].Draw(normalShader);
+
+		//}
 		
 		//Shader.use();
 		//MODELS[8].Draw(Shader);
@@ -422,6 +458,32 @@ void processInput(GLFWwindow *window)
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		camera.ProcessKeyboard(RIGHT, deltaTime);
 
+}
+
+void CalculateVolume(Xyz value, glm::vec4 Functionparameters)
+{
+
+	float high = value.maxz - value.minz;
+
+	float z1 = (Functionparameters.x*value.maxx + Functionparameters.y*value.maxy + Functionparameters.w) / -Functionparameters.z;
+
+	float z2 = (Functionparameters.x*value.maxx + Functionparameters.y*value.miny + Functionparameters.w) / -Functionparameters.z;
+
+	float z3 = (Functionparameters.x*value.minx + Functionparameters.y*value.maxy + Functionparameters.w) / -Functionparameters.z;
+
+	float z4 = (Functionparameters.x*value.minx + Functionparameters.y*value.miny + Functionparameters.w) / -Functionparameters.z;
+
+	z1 = z1 - value.minz;
+
+	z2 = z2 - value.minz;
+
+	z3 = z3 - value.minz;
+
+	z4 = z4 - value.minz;
+
+	float result = 100 * (z1 + z2 + z3 + z4) / (4 * high);
+
+	std::cout << "切除面积为：" << result << "%" << std::endl;
 }
 
 
@@ -568,7 +630,8 @@ void Get3Dpos(int x, int y, glm::vec3 *pp,glm::mat4 modelandview,glm::mat4 poj) 
 		}
 	}
 	winX = (float)mouse_x;
-	winY = (float)viewport[3] - (float)mouse_y - 1.0f;
+	winY = (float)viewport[3] - (float)mouse_y  ;
+	//winY = (float)mouse_y;
 	glReadBuffer(GL_FRONT);
 	glReadPixels(mouse_x, winY, 1,1, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ);
 	std::cout << winZ <<" "<< winX<< " " << winY<<std::endl;
