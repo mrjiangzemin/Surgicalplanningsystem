@@ -55,6 +55,7 @@ void main() {
 	gl_Position = gl_in[0].gl_Position;
     TexCoords = gs_in[0].texCoords;
 	fColor = gs_in[0].color;
+	//fColor = vec4(gs_in[0].Normal,1.0f);
 	gNormal = gs_in[0].Normal;
 	gFragPos = gs_in[0].FragPos;
 	
@@ -62,6 +63,7 @@ void main() {
     gl_Position =gl_in[1].gl_Position;
     TexCoords = gs_in[1].texCoords;
 	fColor = gs_in[1].color;
+	//fColor = vec4(gs_in[1].Normal,1.0f);
 	gNormal = gs_in[1].Normal;
 	gFragPos = gs_in[1].FragPos;
 	
@@ -69,6 +71,7 @@ void main() {
     gl_Position = gl_in[2].gl_Position;
     TexCoords = gs_in[2].texCoords;
 	fColor = gs_in[2].color;
+	//fColor = vec4(gs_in[2].Normal,1.0f);
 	gNormal = gs_in[2].Normal;
 	gFragPos = gs_in[2].FragPos;
 	
