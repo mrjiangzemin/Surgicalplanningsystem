@@ -83,7 +83,7 @@ std::vector<Model> MODELS;
 //存储选择的点
 std::vector<glm::vec3> points;
 //光源位置
-glm::vec3 lightPos(0.0f, 0.0f, 0.0f);
+glm::vec3 lightPos(300.0f, 300.0f, 300.0f);
 int main()
 {
 	translates.push_back(glm::vec3(0.0f, 0.0f, 0.0f));
@@ -131,7 +131,8 @@ int main()
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	Shader ourShader("D:\\OpenGlProject\\lampvs.txt", "D:\\OpenGlProject\\lampfs.txt","D:\\OpenGlProject\\lampgs.txt");
+	//Shader ourShader("D:\\OpenGlProject\\lampvs.txt", "D:\\OpenGlProject\\lampfs.txt","D:\\OpenGlProject\\lampgs.txt");
+	Shader ourShader("D:\\OpenGlProject\\lampvs.txt", "D:\\OpenGlProject\\lampfs.txt", "D:\\OpenGlProject\\lampgs.txt");
 	//Shader normalShader("D:\\OpenGlProject\\normalvs.txt", "D:\\OpenGlProject\\normalfs.txt", "D:\\OpenGlProject\\normalgs.txt");
 	//Shader LampShader("D:\\OpenGlProject\\lvs.txt", "D:\\OpenGlProject\\lfs.txt");
 	/*Shader myShader("lampvs.txt", "lampfs.txt");
@@ -289,6 +290,7 @@ int main()
 			ourShader.setFloat("cutmode", 1.0f);
 			ourShader.setFloat("Functionparameters", mes.x,mes.y,mes.z,mes.w);
 			if (flagbutton6) {
+				std::cout << model1->maxx << " " << model1->minx << " " << model1->maxy << " " << model1->miny << " " << model1->maxz << " " << model1->minz << " " << std::endl ;
 				CalculateVolume(model1->volume(), mes);
 				flagbutton6 = false;
 			}
